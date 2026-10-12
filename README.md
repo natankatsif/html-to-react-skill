@@ -65,10 +65,10 @@ Requires Claude Code and Node 18+.
 
 The scripts install their npm dependencies on first use.
 
-**With the skills CLI** ([skills.sh](https://skills.sh/p/lQQNepREX60TO6IY)) — from your project folder:
+**With the skills CLI** ([skills.sh](https://skills.sh/p/899ZGAwJ1eQyiWcU)) — from your project folder:
 
 ```bash
-npx skills add https://skills.sh/p/lQQNepREX60TO6IY
+npx skills add https://skills.sh/p/899ZGAwJ1eQyiWcU
 ```
 
 **Manually** — copy the skill into a project (or `~/.claude/skills/` for all projects):
