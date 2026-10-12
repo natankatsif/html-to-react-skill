@@ -56,24 +56,34 @@ type PlanCardProps = {
 
 Requires Claude Code and Node 18+.
 
+**As a plugin (recommended)** — in Claude Code:
+
+```
+/plugin marketplace add natankatsif/html-to-react-skill
+/plugin install html-to-react@html-to-react-skill
+```
+
+The scripts install their npm dependencies on first use.
+
+**Manually** — copy the skill into a project (or `~/.claude/skills/` for all projects):
+
 ```bash
 git clone https://github.com/natankatsif/html-to-react-skill
-cp -r html-to-react-skill/skills/html-to-react <project>/.claude/skills/   # or ~/.claude/skills/ for all projects
-npm install --prefix <project>/.claude/skills/html-to-react/scripts
+cp -r html-to-react-skill/skills/html-to-react <project>/.claude/skills/
 ```
 
 ## Usage
 
-Just ask Claude Code: "convert `landing/index.html` into components". The skill triggers on its own (or call `/html-to-react`).
+Just ask Claude Code: "convert `landing/index.html` into components". The skill triggers on its own (or call it as `/html-to-react:html-to-react` when installed as a plugin, `/html-to-react` when copied).
 
-Manually:
+The scripts can also be run directly:
 
 ```bash
-S=.claude/skills/html-to-react/scripts
-node $S/analyze.mjs landing/index.html --project .        # -> .h2r/<slug>/outline.txt, plan.json
-node $S/generate.mjs .h2r/<slug>/plan.json                 # -> components, page, images
-node $S/check.mjs .h2r/<slug>/plan.json --tsc --lint
-node $S/visual-diff.mjs landing/index.html http://localhost:3000/<route>
+H="node <skill-dir>/scripts/h2r.mjs"
+$H analyze landing/index.html --project .        # -> .h2r/<slug>/outline.txt, plan.json
+$H generate .h2r/<slug>/plan.json                 # -> components, page, images
+$H check .h2r/<slug>/plan.json --tsc --lint
+$H visual-diff landing/index.html http://localhost:3000/<route>
 ```
 
 `.h2r/` is a scratch folder; add it to `.gitignore`.
@@ -105,7 +115,12 @@ node $S/visual-diff.mjs landing/index.html http://localhost:3000/<route>
 ## Structure
 
 ```
+.claude-plugin/         plugin + marketplace manifests
 skills/html-to-react/   the skill: SKILL.md, references/, scripts/
 examples/landing/       input, outline/plan, generated code, comparison screenshot
 docs/research.md        research notes (in Russian): prior art, pitfalls, sources
 ```
+
+## License
+
+MIT

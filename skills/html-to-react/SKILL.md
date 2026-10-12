@@ -22,11 +22,9 @@ Never read the source HTML/CSS files and never type markup by hand: the outline
 has what you need, and the generator carries every class and attribute over
 verbatim.
 
-`<skill>` below is the directory of this file. One-time setup (the scripts need Node 18+):
-
-```bash
-npm install --prefix <skill>/scripts --no-audit --no-fund
-```
+`<skill>` below is the directory of this file. All commands go through
+`<skill>/scripts/h2r.mjs`, which installs its npm dependencies on first run
+(needs Node 18+ and network access once).
 
 ## Workflow
 
@@ -44,7 +42,7 @@ Copy this checklist into your reply and tick it off:
 ### 1. Analyze
 
 ```bash
-node <skill>/scripts/analyze.mjs path/to/index.html --project .   # add --css x.css for stylesheets the HTML does not link
+node <skill>/scripts/h2r.mjs analyze path/to/index.html --project .   # add --css x.css for stylesheets the HTML does not link
 ```
 
 It detects the target project (TS/JS, Next app router, Tailwind version, `@/`
@@ -92,7 +90,7 @@ Good boundaries:
 ### 3. Generate
 
 ```bash
-node <skill>/scripts/generate.mjs .h2r/<slug>/plan.json
+node <skill>/scripts/h2r.mjs generate .h2r/<slug>/plan.json
 ```
 
 It validates the plan first (unknown ids, ids inside list items, bad names) and
@@ -127,7 +125,7 @@ do not navigate.
 ### 5. Check
 
 ```bash
-node <skill>/scripts/check.mjs .h2r/<slug>/plan.json --tsc --lint
+node <skill>/scripts/h2r.mjs check .h2r/<slug>/plan.json --tsc --lint
 ```
 
 Reports leftover TODOs, HTML-isms in JSX (`class=`, `style="..."`, inline
@@ -141,7 +139,7 @@ used `"image": "next"`.
 If the project can run (`npm run dev`), compare the original page and the route:
 
 ```bash
-node <skill>/scripts/visual-diff.mjs path/to/index.html http://localhost:3000/<route> --hide "body > header"
+node <skill>/scripts/h2r.mjs visual-diff path/to/index.html http://localhost:3000/<route> --hide "body > header"
 ```
 
 It prints one line per width (default 1280 and 390): % of differing pixels,

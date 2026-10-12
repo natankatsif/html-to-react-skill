@@ -1,0 +1,12 @@
+{
+  "name": "html-to-react-skill",
+  "description": "html-to-react skill for Claude Code",
+  "owner": { "name": "Natan Katsif", "url": "https://github.com/natankatsif" },
+  "plugins": [
+    {
+      "name": "html-to-react",
+      "source": "./",
+      "description": "Convert HTML + CSS / Tailwind pages into clean React / Next.js components with minimal tokens."
+    }
+  ]
+}
