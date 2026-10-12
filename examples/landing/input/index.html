@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumen — analytics for small teams</title>
+  <meta name="description" content="Simple, privacy-friendly analytics.">
+  <link rel="stylesheet" href="style.css">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-inner">
+      <a href="/" class="logo">Lumen<span>.</span></a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu">☰</button>
+      <nav class="nav" id="nav">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <a href="/signup" class="btn btn-small">Start free</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div>
+        <div>
+          <p class="eyebrow">Analytics without the noise</p>
+          <h1>Know what works.<br>Skip the dashboards.</h1>
+          <p class="lead">Lumen shows the three numbers your team actually checks — and sends them to Slack every morning.</p>
+          <div class="hero-actions">
+            <a href="/signup" class="btn">Start free</a>
+            <a href="#features" class="btn btn-ghost">See how it works</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="container">
+      <h2 class="section-title">Built for busy teams</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <h3 class="feature-title">One clear chart</h3>
+          <p class="feature-text">Visitors, signups and revenue on a single timeline.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3 class="feature-title">Private by default</h3>
+          <p class="feature-text">No cookies, no personal data, no consent banner.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>
+          </div>
+          <h3 class="feature-title">Daily digest</h3>
+          <p class="feature-text">A short report in Slack or email at 9:00 every day.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="pricing">
+    <div class="container">
+      <h2 class="section-title">Simple pricing</h2>
+      <div class="plans">
+        <div class="plan">
+          <h3 class="plan-name">Hobby</h3>
+          <p class="plan-price">$0<span>/mo</span></p>
+          <ul class="plan-list"><li>1 site</li><li>10k events</li></ul>
+          <a href="/signup?plan=hobby" class="btn btn-ghost">Choose</a>
+        </div>
+        <div class="plan featured">
+          <h3 class="plan-name">Team</h3>
+          <p class="plan-price">$19<span>/mo</span></p>
+          <ul class="plan-list"><li>10 sites</li><li>1M events</li><li>Slack digest</li></ul>
+          <a href="/signup?plan=team" class="btn">Choose</a>
+        </div>
+        <div class="plan">
+          <h3 class="plan-name">Business</h3>
+          <p class="plan-price">$79<span>/mo</span></p>
+          <ul class="plan-list"><li>Unlimited sites</li><li>10M events</li><li>Slack digest</li><li>SSO</li></ul>
+          <a href="/signup?plan=business" class="btn btn-ghost">Choose</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">© 2026 Lumen Labs · <a href="/privacy">Privacy</a></div>
+  </footer>
+
+  <script>
+    document.getElementById('menuToggle').addEventListener('click', function () {
+      document.getElementById('nav').classList.toggle('open');
+    });
+  </script>
+</body>
+</html>

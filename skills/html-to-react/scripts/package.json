@@ -1,0 +1,15 @@
+{
+  "name": "html-to-react-skill-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic helpers for the html-to-react skill: analyze, generate, check, visual-diff.",
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "css-to-tailwindcss": "^1.1.2",
+    "css-what": "^6.2.2",
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0",
+    "postcss": "^8.5.6",
+    "svgo": "^4.0.0"
+  }
+}

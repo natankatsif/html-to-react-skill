@@ -1,0 +1,36 @@
+# h2r outline: input/index.html
+# source ≈1.3k tok -> outline ≈416 tok | 71 elements, 3 lists, 3 svg (3 unique)
+# styling: tailwind (source CSS)
+# legend: nID element | ×N list{fields} rendered with .map | {field} bound to list data | iN svg icon | ⚡ behavior (behavior.md) | ≈nX same shape as nX | [~Nt] JSX size
+n0 body
+  n1 header.header [~358t] > n2 div.container.header-inner
+    n3 a.logo(/) "Lumen."
+    n5 button.menu-toggle (hidden) ⚡ "☰"
+    n6 nav.nav ⚡
+      n7 a.nav-link(#features) ×3 list{href, label} "Features"
+      n10 a.btn.btn-small(/signup) "Start free"
+  n11 section.hero > n12 div.container > n13 div
+    n14 p.eyebrow "Analytics without the noise"
+    n15 h1 "Know what works. Skip the dashboards."
+    n17 p.lead "Lumen shows the three numbers your team a…"
+    n18 div.hero-actions
+      n19 a.btn(/signup) "Start free"
+      n20 a.btn.btn-ghost(#features) "See how it works"
+  n21 section#features.features [~660t] > n22 div.container
+    n23 h2.section-title "Built for busy teams"
+    n24 div.feature-grid [~598t]
+      n25 div.feature-card ×3 list{icon, featureTitle, featureText} [~555t]
+        n26 div.feature-icon i1
+        n27 h3.feature-title {featureTitle} "One clear chart"
+        n28 p.feature-text {featureText} "Visitors, signups and revenue on a single…"
+  n37 section#pricing.pricing [~691t] > n38 div.container
+    n39 h2.section-title "Simple pricing"
+    n40 div.plans [~627t]
+      n41 div.plan ×3 list{featured, name, price, plans[], href} [~567t]
+        n42 h3.plan-name {name} "Hobby"
+        n43 p.plan-price {price} "$0/mo"
+        n45 ul.plan-list
+          n46 li {plans} "1 site"
+          n47 li "10k events"
+        n48 a.btn.btn-ghost(/signup?plan=hobby) {href,featured} "Choose"
+  n68 footer.footer > n69 div.container "© 2026 Lumen Labs · Privacy"

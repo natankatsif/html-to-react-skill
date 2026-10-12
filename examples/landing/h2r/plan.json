@@ -1,0 +1,51 @@
+{
+  "source": "examples/landing/input/index.html",
+  "css": [],
+  "sourceHash": "efbe8053c9",
+  "project": ".",
+  "styling": "tailwind",
+  "outDir": "src/components/landing",
+  "page": {
+    "file": "src/app/landing/page.tsx",
+    "name": "LandingPage"
+  },
+  "assets": {
+    "dir": "public/landing",
+    "url": "/landing"
+  },
+  "components": {
+    "n1": "Header",
+    "n11": "Hero",
+    "n21": "Features",
+    "n37": "Pricing",
+    "n41": "PlanCard"
+  },
+  "lists": {
+    "n7": "navLinks",
+    "n25": {
+      "name": "features",
+      "fields": {
+        "featureTitle": "title",
+        "featureText": "text"
+      }
+    },
+    "n41": {
+      "name": "plans",
+      "fields": {
+        "plans": "perks"
+      }
+    }
+  },
+  "icons": {
+    "i1": "lucide:ChartLine",
+    "i2": "lucide:Lock",
+    "i3": "lucide:Send"
+  },
+  "iconFonts": {},
+  "client": [
+    "Header"
+  ],
+  "drop": [],
+  "image": "img",
+  "link": "next"
+}
