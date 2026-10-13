@@ -4,7 +4,7 @@ A [Claude Code](https://claude.com/claude-code) skill that turns static markup (
 
 ![Original page on the left, generated components on the right](examples/landing/compare.png)
 
-<sub>Left: the original HTML + CSS + JS. Right: React + Tailwind v4 produced with the skill. Screenshots differ by 0.2%.</sub>
+<sub>Left: the original HTML + CSS + JS. Right: React + Tailwind v4 produced with the skill. The screenshots are pixel-identical.</sub>
 
 ## Idea
 
@@ -98,10 +98,11 @@ $H visual-diff landing/index.html http://localhost:3000/<route>
 
 | page | input | model reads | screenshot diff 1280 / 390 px |
 |---|---|---|---|
-| [example above](examples/landing) (HTML + CSS + JS) | ≈1.3k tokens | ≈0.5k | 0.22% / 0.95% |
+| [example above](examples/landing) (HTML + CSS + JS) | ≈1.3k tokens | ≈0.5k | 0.00% / 0.00% |
 | portfolio: HTML + 30 KB CSS + JS → Tailwind | ≈17k | ≈2.9k | 0.09% / 0.00% |
 | Tailwind v2 landing → v4 | ≈19k | ≈1.1k | 0.01% / — ¹ |
 | forms, tables, `pre`, SVG, entities | ≈1.2k | ≈0.5k | 0.02% / 0.05% |
+| responsive: `@import`, `<link media>`, CSS nesting, `width < 900px`, 4 breakpoints | ≈0.5k | ≈0.3k | 0.00% at 1280 / 800 / 650 / 550 / 450 / 390 |
 
 `tsc` and `eslint` pass in every case. ¹ The template is missing an image at mobile width, so the comparison isn't fair.
 

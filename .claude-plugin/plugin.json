@@ -1,10 +1,21 @@
 {
   "name": "html-to-react",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Convert HTML + CSS / Tailwind pages into clean React / Next.js components with minimal tokens: scripts do the mechanical work, the model only plans and rebuilds behavior.",
-  "author": { "name": "Natan Katsif", "url": "https://github.com/natankatsif" },
+  "author": {
+    "name": "Natan Katsif",
+    "url": "https://github.com/natankatsif"
+  },
   "homepage": "https://github.com/natankatsif/html-to-react-skill",
   "repository": "https://github.com/natankatsif/html-to-react-skill",
   "license": "MIT",
-  "keywords": ["html", "react", "nextjs", "tailwind", "jsx", "migration", "skill"]
+  "keywords": [
+    "html",
+    "react",
+    "nextjs",
+    "tailwind",
+    "jsx",
+    "migration",
+    "skill"
+  ]
 }

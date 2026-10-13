@@ -7,6 +7,8 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import * as cheerio from "cheerio";
+import postcss from "postcss";
+import nested from "postcss-nested";
 
 export const isTag = (n) => n && (n.type === "tag" || n.type === "script" || n.type === "style");
 export const isText = (n) => n && n.type === "text";
@@ -48,6 +50,67 @@ function detectTailwindSource($, scripts, links) {
   return twLike.length / classes.length > 0.5 ? { version: 3, via: "class vocabulary" } : null;
 }
 
+const MEDIA_ALL = /^\s*(only\s+)?(all|screen)?\s*$/i;
+
+/**
+ * Normalize one stylesheet so the rest of the pipeline sees plain, flat CSS
+ * and keeps every responsive rule:
+ *  - CSS nesting (`.card { @media (...) { ... } & h3 {...} }`) is flattened
+ *  - local `@import "x.css" (max-width: 700px)` is inlined, wrapped in its media
+ *  - a `media="..."` attribute on <link>/<style> wraps the whole sheet
+ * Remote @imports (web fonts) stay as they are.
+ */
+export function prepareCss(text, { baseDir, media = null, from = null, seen = new Set() }) {
+  if (media && /^\s*print\s*$/i.test(media)) return ""; // print-only sheet
+  let root;
+  try {
+    root = postcss([nested]).process(text, { from: from || undefined }).root;
+  } catch {
+    try {
+      root = postcss.parse(text);
+    } catch {
+      return text;
+    }
+  }
+  root.walkAtRules("import", (at) => {
+    const m = at.params.match(/^\s*(?:url\(\s*)?(['"]?)([^'")\s]+)\1\s*\)?\s*(.*)$/);
+    if (!m || isRemote(m[2])) return;
+    const f = readLocal(baseDir, m[2]);
+    if (!f || seen.has(f.path)) {
+      at.remove();
+      return;
+    }
+    seen.add(f.path);
+    const innerDir = path.dirname(f.path);
+    const inner = postcss.parse(prepareCss(f.text, { baseDir: innerDir, from: f.path, seen }));
+    // url()s in the imported file are relative to that file: re-anchor them
+    if (innerDir !== baseDir) {
+      inner.walkDecls((d) => {
+        if (!/url\(/.test(d.value)) return;
+        d.value = d.value.replace(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g, (all, q, u) => (isRemote(u) || u.startsWith("/") || u.startsWith("#") ? all : `url(${q}${path.relative(baseDir, path.resolve(innerDir, u)).split(path.sep).join("/")}${q})`));
+      });
+    }
+    const mq = m[3].replace(/^layer(\([^)]*\))?\s*/, "").replace(/^supports\([^)]*\)\s*/, "").trim();
+    let nodes = inner.nodes.slice();
+    if (mq && !MEDIA_ALL.test(mq)) {
+      const wrap = postcss.atRule({ name: "media", params: mq });
+      wrap.append(nodes);
+      nodes = [wrap];
+    }
+    at.replaceWith(nodes);
+  });
+  if (media && !MEDIA_ALL.test(media)) {
+    const imports = root.nodes.filter((n) => n.type === "atrule" && n.name === "import");
+    const rest = root.nodes.filter((n) => !imports.includes(n));
+    const wrap = postcss.atRule({ name: "media", params: media.trim() });
+    wrap.append(rest);
+    root.removeAll();
+    root.append(imports);
+    root.append(wrap);
+  }
+  return root.toString();
+}
+
 /**
  * @returns {{ $, doc, meta, cssSources, scriptSources, handlers }}
  */
@@ -79,7 +142,7 @@ export function loadSource(htmlPath, { extraCss = [] } = {}) {
   const links = [];
   $('link[rel~="stylesheet"], style').each((_, el) => {
     if (el.name === "style") {
-      cssSources.push({ origin: "inline <style>", text: $(el).text(), baseDir });
+      cssSources.push({ origin: "inline <style>", text: prepareCss($(el).text(), { baseDir, media: el.attribs.media }), baseDir });
       return;
     }
     const href = el.attribs.href || "";
@@ -89,13 +152,13 @@ export function loadSource(htmlPath, { extraCss = [] } = {}) {
     else if (isRemote(href)) meta.externalCss.push(href);
     else {
       const f = readLocal(baseDir, href);
-      if (f) cssSources.push({ origin: path.relative(process.cwd(), f.path), text: f.text, path: f.path, baseDir: path.dirname(f.path) });
+      if (f) cssSources.push({ origin: path.relative(process.cwd(), f.path), text: prepareCss(f.text, { baseDir: path.dirname(f.path), media: el.attribs.media, from: f.path }), path: f.path, baseDir: path.dirname(f.path) });
       else meta.externalCss.push(`${href} (not found locally)`);
     }
   });
   for (const extra of extraCss) {
     const p = path.resolve(extra);
-    cssSources.push({ origin: path.relative(process.cwd(), p), text: fs.readFileSync(p, "utf8"), path: p, baseDir: path.dirname(p) });
+    cssSources.push({ origin: path.relative(process.cwd(), p), text: prepareCss(fs.readFileSync(p, "utf8"), { baseDir: path.dirname(p), from: p }), path: p, baseDir: path.dirname(p) });
   }
 
   // ---- scripts

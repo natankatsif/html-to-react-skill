@@ -6,7 +6,7 @@ export default function Hero() {
             <div className="max-w-[1040px] mx-auto my-0 px-6 py-0">
                 <div>
                     <p className="text-(color:--brand) font-semibold uppercase tracking-[0.08em] text-[13px] [margin-block:1em]">Analytics without the noise</p>
-                    <h1 className="font-bold text-[52px] leading-[1.1] mt-3 mb-[18px] mx-0 max-md:text-4xl">Know what works.<br />Skip the dashboards.</h1>
+                    <h1 className="font-bold text-[52px] leading-[1.1] mt-3 mb-[18px] mx-0 max-md:text-[36px]">Know what works.<br />Skip the dashboards.</h1>
                     <p className="text-(color:--muted) text-[19px] max-w-[560px] mt-0 mb-8 mx-auto">
                         Lumen shows the three numbers your team actually checks — and sends them to Slack every morning.
                     </p>

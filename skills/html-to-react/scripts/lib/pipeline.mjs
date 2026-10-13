@@ -138,13 +138,30 @@ export async function buildModel(htmlPath, opts) {
   // ---- validate source Tailwind classes against the target design system
   const twSourceClasses = new Set();
   if (twSource) for (const el of elements) for (const c of classesOf(el)) if (!cssClasses.has(c)) twSourceClasses.add(c);
+  // breakpoints the page defined in its inline tailwind.config (tablet:, laptop:)
+  // do not exist in the target project: write every breakpoint as min-[..]/max-[..]
+  const screens = twSource ? customScreens(meta.tailwindConfig) : null;
+  if (screens) notes.customScreens = Object.keys(screens).length;
+  const rewriteScreens = (variants) => {
+    if (!screens || !variants) return variants;
+    return variants
+      .slice(0, -1)
+      .split(":")
+      .map((v) => {
+        const neg = v.startsWith("max-") && screens[v.slice(4)];
+        const sc = neg ? screens[v.slice(4)] : screens[v];
+        if (!sc) return v;
+        if (neg) return sc.min != null ? `max-[${sc.min}px]` : v;
+        return [sc.min != null ? `min-[${sc.min}px]` : null, sc.max != null ? `max-[${sc.max}px]` : null].filter(Boolean).join(":");
+      })
+      .join(":") + ":";
+  };
   const renameTw = (c) => {
-    if (!tw4 || !twSource || twSource.version >= 4) return c;
-    const { variants, base, lead, trail } = splitClass(c);
-    const r = TW4_RENAMES[base];
-    if (!r) return c;
+    let { variants, base, lead, trail } = splitClass(c);
+    const v2 = rewriteScreens(variants);
+    if (!tw4 || !twSource || twSource.version >= 4 || !TW4_RENAMES[base]) return v2 === variants ? c : `${v2}${lead}${base}${trail}`;
     notes.renamed++;
-    return r.split(" ").map((b) => `${variants}${lead}${b}${trail}`).join(" ");
+    return TW4_RENAMES[base].split(" ").map((b) => `${v2}${lead}${b}${trail}`).join(" ");
   };
   const renamedOf = new Map([...twSourceClasses].map((c) => [c, renameTw(c)]));
   const valid = opts.validator ? opts.validator([...new Set([...renamedOf.values()].flatMap((c) => c.split(" ")))]) : null;
@@ -413,3 +430,45 @@ export function cssModeText(model, scope, { preflight = false } = {}) {
 }
 
 export { isGlobalSelector };
+
+/**
+ * Breakpoints from an inline `tailwind.config = {...}` script (Play CDN pages).
+ * Returns {name: {min?, max?}} in px including the defaults it keeps, or null
+ * when the config defines no screens.
+ */
+export function customScreens(cfg) {
+  if (!cfg) return null;
+  const at = cfg.search(/\bscreens\s*:\s*\{/);
+  if (at < 0) return null;
+  let i = cfg.indexOf("{", at), depth = 0, end = i;
+  for (; end < cfg.length; end++) {
+    if (cfg[end] === "{") depth++;
+    else if (cfg[end] === "}" && --depth === 0) break;
+  }
+  const body = cfg.slice(i + 1, end);
+  const inExtend = (() => {
+    const e = cfg.search(/\bextend\s*:\s*\{/);
+    if (e < 0 || e > at) return false;
+    let d = 0;
+    for (let k = cfg.indexOf("{", e); k < cfg.length; k++) {
+      if (cfg[k] === "{") d++;
+      else if (cfg[k] === "}" && --d === 0) return k > at;
+    }
+    return false;
+  })();
+  const px = (v) => {
+    const m = String(v).match(/([\d.]+)\s*(px|rem|em)/);
+    return m ? (m[2] === "px" ? +m[1] : +m[1] * 16) : null;
+  };
+  const out = inExtend ? { sm: { min: 640 }, md: { min: 768 }, lg: { min: 1024 }, xl: { min: 1280 }, "2xl": { min: 1536 } } : {};
+  let found = false;
+  for (const m of body.matchAll(/(['"]?)([\w-]+)\1\s*:\s*(['"])([^'"]+)\3/g)) {
+    if (m[2] === "min" || m[2] === "max" || m[2] === "raw") continue;
+    if (px(m[4]) != null) (out[m[2]] = { min: px(m[4]) }), (found = true);
+  }
+  for (const m of body.matchAll(/(['"]?)([\w-]+)\1\s*:\s*\{([^}]*)\}/g)) {
+    const min = m[3].match(/min\s*:\s*['"]([^'"]+)['"]/), max = m[3].match(/max\s*:\s*['"]([^'"]+)['"]/);
+    if (min || max) (out[m[2]] = { min: min ? px(min[1]) : null, max: max ? px(max[1]) : null }), (found = true);
+  }
+  return found ? out : null;
+}

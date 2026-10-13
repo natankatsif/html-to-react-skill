@@ -18,7 +18,7 @@ export default function Header() {
                 <Link href="/" className="text-inherit no-underline font-extrabold text-[22px]">Lumen<span className="text-(color:--brand)">.</span></Link>
                 <button
                     type="button"
-                    className="hidden bg-transparent text-2xl cursor-pointer border-0 max-md:block"
+                    className="hidden bg-transparent text-[24px] cursor-pointer border-0 max-md:block"
                     aria-label="Open menu"
                     aria-expanded={menuOpen}
                     onClick={() => setMenuOpen((open) => !open)}
@@ -37,7 +37,7 @@ export default function Header() {
                     ))}
                     <Link
                         href="/signup"
-                        className="no-underline text-white inline-block font-semibold transition-transform duration-150 ease-[ease] text-sm px-3.5 py-2 rounded-[10px] [background:var(--brand)] hover:-translate-y-px"
+                        className="no-underline text-white inline-block font-semibold transition-transform duration-150 ease-[ease] text-[14px] px-3.5 py-2 rounded-[10px] [background:var(--brand)] hover:-translate-y-px"
                     >
                         Start free
                     </Link>
