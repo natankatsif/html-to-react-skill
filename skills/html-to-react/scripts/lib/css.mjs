@@ -236,24 +236,37 @@ export function planSelector(tokens, domClasses, jsClasses, tw4, stateClasses = 
   };
 }
 
+// Width conditions of one media query, in both syntaxes:
+//   (min-width: 768px) / (max-width: 767px)          - classic, max is inclusive
+//   (width >= 768px) / (width < 900px) / (600px <= width < 900px) - Media Queries 4
+// Returns [{kind: "min"|"max", px, exclusive}] or null when it is not a width test.
+const toPx = (n, unit) => (unit === "px" ? +n : +n * 16);
+function widthConds(cond) {
+  let m = cond.match(/^\(\s*(min|max)-width\s*:\s*([\d.]+)(px|em|rem)\s*\)$/);
+  if (m) return [{ kind: m[1], px: toPx(m[2], m[3]), exclusive: false }];
+  m = cond.match(/^\(\s*width\s*(>=|>|<=|<)\s*([\d.]+)(px|em|rem)\s*\)$/);
+  if (m) return [{ kind: m[1][0] === ">" ? "min" : "max", px: toPx(m[2], m[3]), exclusive: m[1] === "<" }];
+  m = cond.match(/^\(\s*([\d.]+)(px|em|rem)\s*(>=|>|<=|<)\s*width\s*\)$/);
+  if (m) return [{ kind: m[3][0] === "<" ? "min" : "max", px: toPx(m[1], m[2]), exclusive: m[3] === ">" }];
+  m = cond.match(/^\(\s*([\d.]+)(px|em|rem)\s*(<=|<)\s*width\s*(<=|<)\s*([\d.]+)(px|em|rem)\s*\)$/);
+  if (m) return [{ kind: "min", px: toPx(m[1], m[2]), exclusive: false }, { kind: "max", px: toPx(m[5], m[6]), exclusive: m[4] === "<" }];
+  return null;
+}
+const stripMediaType = (q) => q.toLowerCase().replace(/\bonly\s+/g, "").replace(/\b(screen|all)\s+and\s+/g, "").replace(/^\s*(screen|all)\s*$/, "").trim();
+// named breakpoint whose Tailwind max-* (width < bp) equals this max condition
+const namedMax = (c) => BREAKPOINTS.find(([, v]) => (c.exclusive ? v === c.px : v === c.px + 1 || Math.abs(v - c.px - 0.02) < 0.001 || v === c.px + 0.5));
+
 // Tailwind v4 emits arbitrary min-[..]/max-[..] variants before named ones
 // (sm, md, lg) whatever their values, so mixing them breaks the cascade.
 // When a stylesheet uses any non-standard breakpoint, every breakpoint of
 // that kind is written as an arbitrary value (those sort by value).
 export function breakpointMode(rules) {
-  const mins = new Set(), maxs = new Set();
-  for (const r of rules) {
-    for (const q of r.ctx.media) {
-      for (const m of q.matchAll(/(min|max)-width\s*:\s*([\d.]+)(px|em|rem)/g)) {
-        const px = m[3] === "px" ? +m[2] : +m[2] * 16;
-        (m[1] === "min" ? mins : maxs).add(px);
-      }
-    }
-  }
+  const conds = [];
+  for (const r of rules) for (const q of r.ctx.media) for (const part of stripMediaType(q).split(/\s+and\s+/)) conds.push(...(widthConds(part.trim()) || []));
   const named = new Set(BREAKPOINTS.map(([, v]) => v));
   return {
-    arbitraryMin: [...mins].some((v) => !named.has(v)),
-    arbitraryMax: [...maxs].some((v) => !named.has(v + 1) && ![...named].some((n) => Math.abs(n - v - 0.02) < 0.001 || n === v + 0.5)),
+    arbitraryMin: conds.some((c) => c.kind === "min" && !named.has(c.px)),
+    arbitraryMax: conds.some((c) => c.kind === "max" && !namedMax(c)),
   };
 }
 
@@ -261,23 +274,24 @@ export function mediaToVariant(media, tw4, mode = {}) {
   const parts = [];
   for (const q of media) {
     if (q.includes(",")) return null;
-    let s = q.toLowerCase().replace(/\bonly\s+/g, "").replace(/^\s*(screen|all)\s+and\s+/, "").replace(/^\s*(screen|all)\s*$/, "").trim();
+    const s = stripMediaType(q);
     if (!s) continue;
     if (s === "print") {
       parts.push("print");
       continue;
     }
-    const conds = s.split(/\s+and\s+/);
-    for (const cond of conds) {
-      const m = cond.match(/^\(\s*(min|max)-width\s*:\s*([\d.]+)(px|em|rem)\s*\)$/);
-      if (m) {
-        const px = m[3] === "px" ? +m[2] : +m[2] * 16;
-        if (m[1] === "min") {
-          const bp = !mode.arbitraryMin && BREAKPOINTS.find(([, v]) => v === px);
-          parts.push(bp ? bp[0] : `min-[${px}px]`);
-        } else {
-          const bp = !mode.arbitraryMax && BREAKPOINTS.find(([, v]) => v === px + 1 || Math.abs(v - px - 0.02) < 0.001 || v === px + 0.5);
-          parts.push(bp ? `max-${bp[0]}` : `max-[${px}px]`);
+    for (const raw of s.split(/\s+and\s+/)) {
+      const cond = raw.trim();
+      const w = widthConds(cond);
+      if (w) {
+        for (const c of w) {
+          if (c.kind === "min") {
+            const bp = !mode.arbitraryMin && BREAKPOINTS.find(([, v]) => v === c.px);
+            parts.push(bp ? bp[0] : `min-[${c.px}px]`);
+          } else {
+            const bp = !mode.arbitraryMax && namedMax(c);
+            parts.push(bp ? `max-${bp[0]}` : `max-[${c.px}px]`);
+          }
         }
         continue;
       }
@@ -446,6 +460,13 @@ export class TailwindEmitter {
       }
       classes = classes.concat(left.map((d) => arbitraryProperty(d.prop, d.value)));
       classes = classes.map((c) => this.normalize(c));
+      // text-2xl & co. also set line-height; when the CSS only set font-size,
+      // use the exact size so line boxes keep their original height
+      const fs = group.find((d) => d.prop === "font-size");
+      if (fs && !group.some((d) => d.prop === "line-height")) {
+        const v = fs.value.trim().replace(/\s+/g, "_");
+        classes = classes.map((c) => (/^text-(xs|sm|base|lg|xl|[2-9]xl)$/.test(c) ? (/^var\(/.test(v) ? `text-[length:${v}]` : `text-[${v}]`) : c));
+      }
       // The converter speaks Tailwind v3; when a class it produced is not
       // valid for the project's Tailwind, redo that group one declaration at
       // a time and fall back to an arbitrary property for the failures.

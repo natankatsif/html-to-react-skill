@@ -12,7 +12,7 @@ type PlanCardProps = {
 export default function PlanCard({ featured, name, price, perks, href }: PlanCardProps) {
     return (
         <div className={featured ? "bg-white border-(color:--brand) shadow-[0_20px_40px_-20px_rgba(109,40,217,0.45)] p-7 rounded-2xl border-2 border-solid" : "bg-white border border-(color:--line) p-7 rounded-2xl border-solid"}>
-            <h3 className="font-bold text-lg m-0">{name}</h3>
+            <h3 className="font-bold text-[18px] m-0">{name}</h3>
             <p className="text-[40px] font-extrabold mt-2 mb-4 mx-0">{price}</p>
             <ul className="list-disc text-(color:--muted) mt-0 mb-6 mx-0 pl-[18px]">
                 {perks.map((perk, index) => <li key={index}>{perk}</li>)}

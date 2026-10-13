@@ -18,7 +18,7 @@ export default function LandingPage() {
             <Hero />
             <Features />
             <Pricing />
-            <footer className="border-t-(color:--line) text-(color:--muted) text-sm text-center px-0 py-6 border-t border-solid">
+            <footer className="border-t-(color:--line) text-(color:--muted) text-[14px] text-center px-0 py-6 border-t border-solid">
                 <div className="max-w-[1040px] mx-auto my-0 px-6 py-0">
                     © 2026 Lumen Labs · <Link href="/privacy" className="text-inherit underline">Privacy</Link>
                 </div>

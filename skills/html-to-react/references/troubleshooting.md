@@ -5,12 +5,22 @@ A height mismatch means layout drift; everything below the first differing row
 shifts, so fix from the top down and re-run - one cause often explains most of the %.
 
 ## Contents
+- Output is static (does not adapt like the original)
 - Differences from the very top (y≈0)
 - Text looks different (fonts, weights, line-height)
 - Element sizes differ (images, widths at one breakpoint)
 - Something is missing or invisible
 - Build / type errors
 - Pages that depend on a CSS framework from a CDN
+
+## Output is static (does not adapt like the original)
+
+Read the `responsive:` line analyze printed.
+- **"NONE found"**: the scripts saw no media queries. The responsive CSS lives where analyze cannot see it: a stylesheet loaded by JS, a CDN file, or one the HTML does not link. Pass it with `--css path/to/file.css`. Some exports switch layouts with JS instead; check behavior.md.
+- **Breakpoints listed but the layout does not change**: run visual-diff with `--widths` on both sides of each breakpoint and open the diff for the failing width. A rule the original CSS itself overrides (same specificity, later in the file) is correctly not applied; compare against the original at that width before changing anything.
+- **Tailwind page with custom screens** (`tablet:`, `laptop:` from an inline `tailwind.config`): they are rewritten to `min-[..]:`; analyze reports how many.
+
+Handled automatically: `<link media="...">` and `<style media="...">`, local `@import "x.css" (max-width: ...)`, CSS nesting (`.card { @media (...) {} }`), range syntax (`width < 900px`, `600px <= width < 900px`).
 
 ## Differences from the very top (y≈0)
 

@@ -3,20 +3,20 @@ import PlanCard from "./PlanCard";
 const plans = [
     {
         name: "Hobby",
-        price: <>$0<span className="text-base text-(color:--muted) font-medium">/mo</span></>,
+        price: <>$0<span className="text-[16px] text-(color:--muted) font-medium">/mo</span></>,
         href: "/signup?plan=hobby",
         perks: ["1 site", "10k events"],
     },
     {
         featured: true,
         name: "Team",
-        price: <>$19<span className="text-base text-(color:--muted) font-medium">/mo</span></>,
+        price: <>$19<span className="text-[16px] text-(color:--muted) font-medium">/mo</span></>,
         href: "/signup?plan=team",
         perks: ["10 sites", "1M events", "Slack digest"],
     },
     {
         name: "Business",
-        price: <>$79<span className="text-base text-(color:--muted) font-medium">/mo</span></>,
+        price: <>$79<span className="text-[16px] text-(color:--muted) font-medium">/mo</span></>,
         href: "/signup?plan=business",
         perks: ["Unlimited sites", "10M events", "Slack digest", "SSO"],
     },

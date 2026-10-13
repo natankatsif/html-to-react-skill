@@ -162,6 +162,13 @@ async function main() {
   const out = [];
   out.push(header.split("\n").slice(0, 3).join("\n"));
   out.push(`project: ${project.framework}, ${project.typescript ? "TS" : "JS"}, tailwind ${project.tailwind ?? "none"}${validator ? " (classes validated)" : ""}, indent ${project.indent}, alias ${project.alias?.prefix || "none"}`);
+  // responsiveness: say plainly what was found, so a static result is never a surprise
+  const mediaRules = model.parsed.rules.filter((r) => r.ctx.media.length);
+  const bps = [...new Set(mediaRules.flatMap((r) => r.ctx.media.join(" ").match(/[\d.]+(?=px)/g) || []))].map(Number).sort((a, b) => a - b);
+  const twResponsive = [...model.ids.keys()].reduce((n, el) => n + ((el.attribs?.class || "").match(/(^|\s)(min-\[|max-\[|sm:|md:|lg:|xl:|2xl:|max-(sm|md|lg|xl):)/g) || []).length, 0);
+  const keptMedia = model.tw ? model.tw.leftovers.filter((l) => l.rule.ctx.media.length).length : 0;
+  if (mediaRules.length || twResponsive) out.push(`responsive: ${mediaRules.length} media rules${bps.length ? ` (breakpoints ${bps.join(", ")}px)` : ""}, ${twResponsive} responsive classes in output${keptMedia ? `, ${keptMedia} kept as CSS` : ""}${notes.customScreens ? `, ${notes.customScreens} custom Tailwind screens rewritten` : ""}`);
+  else out.push("responsive: NONE found - no media queries or breakpoint classes in the source, so the output will be as static as the source. If the page does adapt, its CSS is somewhere analyze cannot see (pass it with --css) or JS resizes it (check behavior.md).");
   if (notes.droppedClasses.size) out.push(`dropped dead classes: ${top3(notes.droppedClasses)}`);
   if (notes.unknownClasses.size) out.push(`dropped classes unknown to Tailwind ${tw4 ? "v4" : ""}: ${top3(notes.unknownClasses)}`);
   if (notes.jsHookClasses.size) out.push(`JS hook classes (rebuild as state): ${top3(notes.jsHookClasses)}`);

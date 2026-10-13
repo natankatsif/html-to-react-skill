@@ -142,7 +142,10 @@ If the project can run (`npm run dev`), compare the original page and the route:
 node <skill>/scripts/h2r.mjs visual-diff path/to/index.html http://localhost:3000/<route> --hide "body > header"
 ```
 
-It prints one line per width (default 1280 and 390): % of differing pixels,
+analyze prints the page's breakpoints (`responsive: ... breakpoints 600, 900px`);
+pass `--widths` with one width on each side of every breakpoint (e.g.
+`--widths 1280,880,620,390`) so responsive rules are actually compared.
+It prints one line per width: % of differing pixels,
 page heights, first differing row. `--hide` hides the host app's own chrome
 (site header, cookie bar). Under 1% is done. Open `diff-<w>.png` only when a
 number is high; causes and fixes: [references/troubleshooting.md](references/troubleshooting.md).

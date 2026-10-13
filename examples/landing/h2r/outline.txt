@@ -3,7 +3,7 @@
 # styling: tailwind (source CSS)
 # legend: nID element | ×N list{fields} rendered with .map | {field} bound to list data | iN svg icon | ⚡ behavior (behavior.md) | ≈nX same shape as nX | [~Nt] JSX size
 n0 body
-  n1 header.header [~358t] > n2 div.container.header-inner
+  n1 header.header [~360t] > n2 div.container.header-inner
     n3 a.logo(/) "Lumen."
     n5 button.menu-toggle (hidden) ⚡ "☰"
     n6 nav.nav ⚡
@@ -23,10 +23,10 @@ n0 body
         n26 div.feature-icon i1
         n27 h3.feature-title {featureTitle} "One clear chart"
         n28 p.feature-text {featureText} "Visitors, signups and revenue on a single…"
-  n37 section#pricing.pricing [~691t] > n38 div.container
+  n37 section#pricing.pricing [~696t] > n38 div.container
     n39 h2.section-title "Simple pricing"
-    n40 div.plans [~627t]
-      n41 div.plan ×3 list{featured, name, price, plans[], href} [~567t]
+    n40 div.plans [~632t]
+      n41 div.plan ×3 list{featured, name, price, plans[], href} [~573t]
         n42 h3.plan-name {name} "Hobby"
         n43 p.plan-price {price} "$0/mo"
         n45 ul.plan-list

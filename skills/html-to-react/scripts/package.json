@@ -10,6 +10,7 @@
     "pixelmatch": "^7.1.0",
     "pngjs": "^7.0.0",
     "postcss": "^8.5.6",
+    "postcss-nested": "^6.2.0",
     "svgo": "^4.0.0"
   }
 }

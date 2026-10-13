@@ -741,6 +741,15 @@ async function main() {
   for (const w of warnings) todo.push(`WARNING: ${w}`);
 
   if (!dry) {
+    // files an earlier run of this plan wrote but this run no longer produces (e.g. a page CSS
+    // file that is now empty) would otherwise linger as stale output
+    try {
+      const prev = JSON.parse(fs.readFileSync(path.join(path.dirname(path.resolve(planPath)), "generated.json"), "utf8")).files || [];
+      const now = new Set(outputs.map((o) => path.resolve(o.file)));
+      for (const f of prev) if (!now.has(path.resolve(root, f)) && fs.existsSync(path.resolve(root, f))) fs.rmSync(path.resolve(root, f));
+    } catch {
+      /* first run */
+    }
     for (const o of outputs) {
       fs.mkdirSync(path.dirname(o.file), { recursive: true });
       fs.writeFileSync(o.file, o.code);
