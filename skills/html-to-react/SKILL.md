@@ -1,6 +1,6 @@
 ---
 name: html-to-react
-description: Converts static HTML + CSS or HTML + Tailwind pages (landing pages, HTML templates, Webflow/Framer/ThemeForest exports, saved web pages, Tailwind UI snippets) into clean React / Next.js components while spending few tokens - scripts parse, clean, convert CSS to Tailwind and write the JSX; the model only reads a compact outline, picks component boundaries and names, and rebuilds the page's JavaScript as React state. Use whenever the user wants HTML, CSS or Tailwind markup turned into React, JSX, TSX or Next.js components, wants to port or migrate a static site, template or landing page to React, or says things like "convert this html to react", "переделай вёрстку в компоненты", "сделай из html реакт", even for a single pasted file.
+description: Converts static HTML + CSS or HTML + Tailwind pages (landing pages, HTML templates, Webflow/Framer/ThemeForest exports, saved web pages, Tailwind UI snippets) into clean React / Next.js components while spending few tokens - scripts parse, clean, convert CSS to Tailwind and write the JSX; the model only reads a compact outline, picks component boundaries and names, and rebuilds the page's JavaScript as React state. Use whenever the user wants HTML, CSS or Tailwind markup turned into React, JSX, TSX or Next.js components, wants to port or migrate a static site, template or landing page to React, or says things like "convert this html to react", "переделай вёрстку в компоненты", "сделай из html реакт", even for a single pasted file. Also when the user has separate desktop and mobile exports of the same page - they are merged into one responsive component set.
 ---
 
 # HTML → React, token-lean
@@ -51,6 +51,27 @@ alias, indentation) and writes `.h2r/<slug>/`: `outline.txt`, `behavior.md`,
 only). Read `outline.txt`; read `behavior.md` only if the outline shows ⚡.
 Re-running analyze never overwrites an edited `plan.json` (it writes
 `plan.suggested.json`; `--force` replaces it).
+
+**Several layouts of one page** (a desktop export and a mobile export from
+Figma/Pencil/Framer, `home-1440.html` + `home-390.html`, ...) are ONE page:
+pass all files to a single analyze run, in any order.
+
+```bash
+node <skill>/scripts/h2r.mjs analyze desktop.html mobile.html --project .   # --widths 1440,390 if not detectable
+```
+
+The smallest layout becomes the base and each wider one applies from the
+Tailwind breakpoint between them (390 + 1278 → `lg:`). Elements are matched
+by layer name, text and SVG, so shared parts become one element with responsive
+classes; only what really differs is rendered twice with `lg:hidden` /
+`max-lg:hidden`. Never generate a second component set (`mobile/`,
+`*Mobile.tsx`) and never hand-merge two outputs. If the user sends the second
+layout later, re-run analyze with **both** files and `--force`, carry your
+component names over to the new plan, and regenerate into the same `outDir`.
+In the outline, `[<lg only]` / `[lg+ only]` mark one-layout elements and
+`[wrapper <lg]` a box that exists in one layout only (it becomes
+`display: contents` in the other) - prefer component boundaries on shared
+elements.
 
 Outline syntax:
 

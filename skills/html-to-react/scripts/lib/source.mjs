@@ -178,8 +178,10 @@ export function loadSource(htmlPath, { extraCss = [] } = {}) {
       return;
     }
     const text = $(el).text();
-    if (/tailwind\.config\s*=/.test(text)) {
+    if (/tailwind(\.config)?\s*=\s*\{/.test(text)) {
       meta.tailwindConfig = text.trim();
+      // exports designed with Preflight off rely on browser defaults
+      if (/preflight\s*:\s*false/.test(text)) meta.preflightOff = true;
       return;
     }
     if (text.trim()) scriptSources.push({ origin: "inline <script>", text });

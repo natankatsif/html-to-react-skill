@@ -58,7 +58,9 @@ export function makeSigner() {
       const kids = (el.children || []).filter((c) => isTag(c) || (isText(c) && !wsOnly(c)));
       const inline = kids.some((c) => isText(c)) ? "~" : "";
       const childSigs = kids.filter(isTag).map((c) => sig(c, strict));
-      s = `${el.name}${cls ? "." + cls : ""}${inline}(${collapse(childSigs).join(",")})`;
+      // items visible in different layouts (lg:hidden vs max-lg:hidden) never form one list
+      const vis = strict ? "" : (el.attribs.class || "").split(/\s+/).filter((t) => /^[\w-]+:(hidden|contents)$/.test(t)).sort().join(".");
+      s = `${el.name}${cls ? "." + cls : ""}${vis ? "!" + vis : ""}${inline}(${collapse(childSigs).join(",")})`;
     }
     m.set(el, s);
     return s;
