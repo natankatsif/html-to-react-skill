@@ -67,7 +67,7 @@ async function main() {
   const validator = styling === "tailwind" && tw4 ? await loadTailwindValidator(project) : null;
   const htmlDir = path.dirname(path.resolve(plan.source));
   const assets = new Assets({ htmlDir, publicDir: path.join(root, plan.assets?.dir || "public"), publicUrl: plan.assets?.url ?? "", dryRun: dry });
-  const model = await buildModel(plan.source, { extraCss: plan.css || [], styling, tw4, validator, assets });
+  const model = await buildModel(plan.source, { extraCss: plan.css || [], styling, tw4, validator, assets, variants: plan.variants || null, baseWidth: plan.baseWidth });
   const warnings = [];
   if (plan.sourceHash && plan.sourceHash !== model.meta.sourceHash) warnings.push("source changed since analyze: node ids may have shifted - re-run analyze.mjs and re-check the plan");
 
@@ -708,9 +708,11 @@ async function main() {
   const scopeClass = `${slug}-page`;
   // plain-CSS sources inside a Tailwind v4 app: scope the page and undo Preflight there
   const hasForms = model.$("body input, body button, body select, body textarea").length > 0;
-  const undoPreflight = !!project.tailwind && !model.twSource && (styling === "css" || (tw4 && hasForms));
+  // Tailwind exports made with Preflight off (design tools) were drawn against browser defaults too
+  const preflightOff = !!model.twSource && !!model.meta.preflightOff && tw4;
+  const undoPreflight = !!project.tailwind && (preflightOff || (!model.twSource && (styling === "css" || (tw4 && hasForms))));
   let cssText = styling === "tailwind" ? model.globalsCss : cssModeText(model, scopeClass, { preflight: !!project.tailwind });
-  if (styling === "tailwind" && undoPreflight) cssText = `${preflightUndo(scopeClass, { mode: "forms" })}\n\n${cssText}`.trim();
+  if (styling === "tailwind" && undoPreflight) cssText = `${preflightUndo(scopeClass, { mode: preflightOff ? "all" : "forms" })}\n\n${cssText}`.trim();
   if (cssText && cssText.trim()) cssFile = path.join(outDir, `${slug}.css`);
 
   // render children first so the icon file collects every icon used

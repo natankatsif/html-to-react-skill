@@ -4,7 +4,9 @@
 //   behavior.md   - what the page's JavaScript does, mapped to node ids
 //   plan.json     - pre-filled plan for generate.mjs (edit, then generate)
 //   scripts/      - extracted JS, read only if a behavior is unclear
-// Usage: node analyze.mjs <page.html> [--css extra.css]... [--project .] [--work .h2r/<slug>] [--styling tailwind|css] [--force]
+// Usage: node analyze.mjs <page.html> [more.html ...] [--css extra.css]... [--project .] [--work .h2r/<slug>] [--styling tailwind|css] [--widths 390,1278] [--force]
+// Several HTML files = exports of the SAME page at different screen sizes
+// (mobile + desktop): they are merged into one responsive tree.
 // An existing plan.json is never overwritten (a fresh one goes to plan.suggested.json) unless --force.
 import fs from "node:fs";
 import path from "node:path";
@@ -13,6 +15,8 @@ import { buildModel } from "./lib/pipeline.mjs";
 import { renderOutline, renderHeader } from "./lib/outline.mjs";
 import { elementChildren } from "./lib/source.mjs";
 import { normText, textOf } from "./lib/repeat.mjs";
+import * as cheerio from "cheerio";
+import { artboardWidth, breakpointFor } from "./lib/variants.mjs";
 
 function args(argv) {
   const o = { css: [], _: [] };
@@ -29,11 +33,12 @@ function args(argv) {
 const pascal = (s) => s.replace(/[^A-Za-z0-9]+/g, " ").trim().split(/\s+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join("");
 const kebab = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-function suggestName(el, used) {
+function suggestName(el, used, layerName) {
   const a = el.attribs || {};
   const tagNames = { nav: "Navbar", header: "Header", footer: "Footer", aside: "Sidebar", form: "ContactForm" };
   let name = null;
-  if (a.id && /^[a-z]/i.test(a.id)) name = pascal(a.id);
+  if (layerName) name = pascal(layerName.replace(/\(.*?\)|[—–-].*$/g, "").trim());
+  if (!name && a.id && /^[a-z]/i.test(a.id)) name = pascal(a.id);
   if (!name && tagNames[el.name]) name = tagNames[el.name];
   if (!name) {
     const h = [];
@@ -56,21 +61,36 @@ function suggestName(el, used) {
 
 async function main() {
   const o = args(process.argv.slice(2));
-  const html = o._[0];
-  if (!html || !fs.existsSync(html)) {
-    console.error("usage: node analyze.mjs <page.html> [--css extra.css] [--project .] [--work dir] [--styling tailwind|css]");
+  const inputs = o._;
+  if (!inputs.length || inputs.some((f) => !fs.existsSync(f))) {
+    console.error("usage: node analyze.mjs <page.html> [mobile.html desktop.html ...] [--css extra.css] [--project .] [--work dir] [--styling tailwind|css] [--widths 390,1278]");
     process.exit(2);
   }
+  // several files = one page at several screen sizes: smallest is the base
+  let variants = inputs.map((file, i) => {
+    const forced = o.widths ? Number(String(o.widths).split(",")[i]) : null;
+    return { file: path.resolve(file), width: forced || artboardWidth(cheerio.load(fs.readFileSync(file, "utf8"))) };
+  });
+  if (variants.length > 1 && variants.some((v) => !v.width)) {
+    console.error(`cannot tell the screen width of: ${variants.filter((v) => !v.width).map((v) => v.file).join(", ")} - pass --widths ${variants.map(() => "N").join(",")} (same order as the files)`);
+    process.exit(2);
+  }
+  variants.sort((x, y) => (x.width || 0) - (y.width || 0));
+  for (let i = 1; i < variants.length; i++) variants[i].breakpoint = breakpointFor(variants[i - 1].width, variants[i].width);
+  const html = variants[0].file;
   const project = detectProject(o.project || process.cwd());
   const styling = o.styling || (project.tailwind ? "tailwind" : "css");
   const tw4 = (project.tailwind ?? 4) >= 4;
   const validator = styling === "tailwind" && tw4 ? await loadTailwindValidator(project) : null;
   const base = path.basename(html, path.extname(html));
-  const slug = kebab(base === "index" ? path.basename(path.dirname(path.resolve(html))) : base) || "page";
+  // "c67c423d-Hero-export" (upload hash + design-tool suffix) -> "hero"; a route/identifier can't start with a digit
+  const cleanName = (s) => s.replace(/^[0-9a-f]{8}-(?=.)/i, "").replace(/[-_ ]export$/i, "");
+  let slug = kebab(cleanName(base === "index" ? path.basename(path.dirname(path.resolve(html))) : base)) || "page";
+  if (/^\d/.test(slug)) slug = `page-${slug}`;
   const work = path.resolve(o.work || path.join(project.root, ".h2r", slug));
   fs.mkdirSync(path.join(work, "scripts"), { recursive: true });
 
-  const model = await buildModel(html, { extraCss: o.css, styling, tw4, validator });
+  const model = await buildModel(html, { extraCss: o.css, styling, tw4, validator, variants: variants.slice(1), baseWidth: variants[0].width });
   const outlineBody = renderOutline(model);
   const header = renderHeader(model, { outlineChars: outlineBody.length, file: path.relative(project.root, path.resolve(html)) });
   fs.writeFileSync(path.join(work, "outline.txt"), `${header}\n${outlineBody}\n`);
@@ -111,7 +131,7 @@ async function main() {
   for (const el of top) {
     if (!model.ids.has(el) || el.name === "svg" || el.name === "script") continue;
     if (model.$.html(el).length < 600) continue;
-    components[model.ids.get(el)] = suggestName(el, used);
+    components[model.ids.get(el)] = suggestName(el, used, model.layerNames.get(el));
   }
   const icons = {};
   // big multi-color illustrations become files (<img>), small/currentColor ones become components
@@ -121,6 +141,7 @@ async function main() {
   const pageFile = project.router === "app" ? `${project.appDir}/${slug}/page.${project.typescript ? "tsx" : "jsx"}` : `${compDir}/${slug}/${pascal(slug)}Page.${project.typescript ? "tsx" : "jsx"}`;
   const plan = {
     source: path.resolve(html),
+    ...(variants.length > 1 ? { baseWidth: variants[0].width, variants: variants.slice(1) } : {}),
     css: o.css.map((c) => path.resolve(c)),
     sourceHash: model.meta.sourceHash,
     project: project.root,
@@ -162,6 +183,9 @@ async function main() {
   const out = [];
   out.push(header.split("\n").slice(0, 3).join("\n"));
   out.push(`project: ${project.framework}, ${project.typescript ? "TS" : "JS"}, tailwind ${project.tailwind ?? "none"}${validator ? " (classes validated)" : ""}, indent ${project.indent}, alias ${project.alias?.prefix || "none"}`);
+  if (model.variantInfo) {
+    for (const st of model.variantInfo.stats) out.push(`variants: ${variants[0].width}px is the base, ${st.width}px applies from ${st.breakpoint}: (${st.breakpoint === "lg" ? "1024" : st.breakpoint}) - ${st.merged} elements shared, ${st.baseOnly} only in the small layout, ${st.bpOnly} only in the large one, ${st.wrappers} one-sided wrappers`);
+  }
   // responsiveness: say plainly what was found, so a static result is never a surprise
   const mediaRules = model.parsed.rules.filter((r) => r.ctx.media.length);
   const bps = [...new Set(mediaRules.flatMap((r) => r.ctx.media.join(" ").match(/[\d.]+(?=px)/g) || []))].map(Number).sort((a, b) => a - b);

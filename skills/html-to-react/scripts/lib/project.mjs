@@ -137,7 +137,8 @@ export async function loadTailwindValidator(project) {
     const css = fs.readFileSync(path.join(project.root, project.globalsCss), "utf8");
     const ds = await mod.__unstable__loadDesignSystem(css, { base: path.dirname(path.join(project.root, project.globalsCss)) });
     const cache = new Map();
-    return (candidates) => {
+    const propCache = new Map();
+    const validate = (candidates) => {
       const todo = candidates.filter((c) => !cache.has(c));
       if (todo.length) {
         const out = ds.candidatesToCss(todo);
@@ -145,6 +146,25 @@ export async function loadTailwindValidator(project) {
       }
       return new Set(candidates.filter((c) => cache.get(c)));
     };
+    // CSS properties a utility sets (variants stripped): used to merge
+    // mobile/desktop class lists without leaving stale mobile values
+    validate.propsOf = (token) => {
+      let base = token;
+      let depth = 0, last = -1;
+      for (let i = 0; i < token.length; i++) {
+        if (token[i] === "[") depth++;
+        else if (token[i] === "]") depth--;
+        else if (token[i] === ":" && depth === 0) last = i;
+      }
+      base = token.slice(last + 1).replace(/^!|!$/g, "");
+      if (propCache.has(base)) return propCache.get(base);
+      const css = ds.candidatesToCss([base])[0] || "";
+      const body = css.split("{").slice(1).join("{");
+      const props = new Set([...body.matchAll(/(?:^|[;{\s])([a-z][a-z-]*)\s*:/g)].map((m) => m[1]).filter((p) => !p.startsWith("--")));
+      propCache.set(base, props);
+      return props;
+    };
+    return validate;
   } catch {
     return null;
   }

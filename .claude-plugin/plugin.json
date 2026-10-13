@@ -1,6 +1,6 @@
 {
   "name": "html-to-react",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Convert HTML + CSS / Tailwind pages into clean React / Next.js components with minimal tokens: scripts do the mechanical work, the model only plans and rebuilds behavior.",
   "author": {
     "name": "Natan Katsif",

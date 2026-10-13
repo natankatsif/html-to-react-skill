@@ -26,6 +26,13 @@ export function renderOutline(model, { title = "page" } = {}) {
     s += el.name;
     const a = el.attribs || {};
     if (a.id) s += `#${a.id}`;
+    const layer = model.layerNames?.get(el);
+    if (layer) s += `⟨${layer.length > 32 ? layer.slice(0, 31) + "…" : layer}⟩`;
+    const only = model.variantInfo?.only.get(el);
+    if (only) {
+      const [kind, bp] = only.split("@");
+      s += { base: ` [<${bp} only]`, bp: ` [${bp}+ only]`, "wrap-base": ` [wrapper <${bp}]`, "wrap-bp": ` [wrapper ${bp}+]` }[kind];
+    }
     const sem = (origClasses.get(el) || "").split(/\s+/).filter((c) => c && (cssClasses.has(c) || !UTILITY_LIKE.test(c))).slice(0, 2);
     if (sem.length) s += `.${sem.join(".")}`;
     if (el.name === "a" && a.href) s += `(${a.href.length > 30 ? a.href.slice(0, 29) + "…" : a.href})`;
@@ -118,6 +125,10 @@ export function renderHeader(model, { outlineChars, file }) {
   h.push(`# source ≈${fmtTok(src)} tok -> outline ≈${fmtTok(out)} tok | ${model.ids.size} elements, ${model.groups.length} lists, ${iconsTotal} svg (${iconsUnique} unique)`);
   const tw = model.twSource ? `source Tailwind v${model.twSource.version} -> ${model.tw4 ? "v4" : "v3"}` : "source CSS";
   h.push(`# styling: ${model.styling} (${tw})${m.externalCss.length ? ` | external CSS kept: ${m.externalCss.length}` : ""}`);
-  h.push(`# legend: nID element | ×N list{fields} rendered with .map | {field} bound to list data | iN svg icon | ⚡ behavior (behavior.md) | ≈nX same shape as nX | [~Nt] JSX size`);
+  if (model.variantInfo) {
+    const bp = model.variantInfo.widths.find((w) => w.prefix)?.prefix || "lg";
+    h.push(`# merged layouts: ${model.variantInfo.widths.map((w) => `${w.w}px${w.prefix ? ` from ${w.prefix}:` : " (base)"}`).join(" + ")} | [<${bp} only] / [${bp}+ only] = exists in one layout, rendered with ${bp}:hidden / max-${bp}:hidden | [wrapper ...] = box only in that layout (display:contents in the other)`);
+  }
+  h.push(`# legend: nID element${model.layerNames?.size ? " ⟨layer name⟩" : ""} | ×N list{fields} rendered with .map | {field} bound to list data | iN svg icon | ⚡ behavior (behavior.md) | ≈nX same shape as nX | [~Nt] JSX size`);
   return h.join("\n");
 }

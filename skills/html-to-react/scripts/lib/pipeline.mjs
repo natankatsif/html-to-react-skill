@@ -9,6 +9,7 @@ import path from "node:path";
 import { TW4_RENAMES, TW_NOOP_CLASSES, DROP_ATTRS, INLINE_ELEMENTS, UA_DEFAULTS } from "./maps.mjs";
 import { detectGroups, findDuplicates, isIconElement, setHintClasses } from "./repeat.mjs";
 import { Assets } from "./assets.mjs";
+import { LAYER_ATTRS, mergeVariant, fluidize, roughProps } from "./variants.mjs";
 
 const BLOCKISH = new Set(["div", "section", "article", "aside", "header", "footer", "main", "nav", "ul", "ol", "form", "figure", "table", "p", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "dl", "details", "fieldset", "picture", "video"]);
 
@@ -73,6 +74,12 @@ export async function buildModel(htmlPath, opts) {
   // original semantic class names, for the outline (they explain intent)
   const origClasses = new Map();
   $("body, body *").each((_, el) => el.attribs?.class && origClasses.set(el, el.attribs.class));
+  // layer names from design-tool exports (Pencil, Framer, Figma plugins): the
+  // best hint for component names and for matching desktop/mobile variants
+  const layerNames = new Map();
+  $("body *").each((_, el) => {
+    for (const k of LAYER_ATTRS) if (el.attribs?.[k]) return void layerNames.set(el, el.attribs[k].trim());
+  });
 
   const behavior = analyzeScripts($, src.scriptSources);
   const parsed = parseStylesheets(src.cssSources);
@@ -80,7 +87,7 @@ export async function buildModel(htmlPath, opts) {
   // ---- assets (before CSS conversion, so url() values are final)
   for (const r of parsed.rules) r.decls = r.decls.map((d) => (/url\(/.test(d.value) ? { ...d, value: assets.rewriteCssUrls(d.value, r.baseDir) } : d));
   for (const g of parsed.globals) g.node.walkDecls((d) => /url\(/.test(d.value) && (d.value = assets.rewriteCssUrls(d.value, g.baseDir)));
-  const elements = [body, ...allElements(body)];
+  let elements = [body, ...allElements(body)];
   for (const el of elements) {
     const a = el.attribs || {};
     for (const k of ["src", "href", "srcset", "poster", "action", "data-src"]) if (typeof a[k] === "string") a[k] = a[k].trim(); // browsers ignore surrounding whitespace in URLs
@@ -276,6 +283,30 @@ export async function buildModel(htmlPath, opts) {
   };
   elementChildren(body).forEach(flatten);
 
+  if (opts.prepareOnly) return { $, body, layerNames, meta, owns: ((set) => (el) => set.has(el))(new Set([body, ...allElements(body)])) };
+
+  // ---- several exports of one page (mobile + desktop): merge into one tree
+  let variantInfo = null;
+  if (opts.variants?.length) {
+    const propsOf = opts.validator?.propsOf || roughProps;
+    const ctxA = { $, body, layerNames, owns: ((set) => (el) => set.has(el))(new Set([body, ...allElements(body)])) };
+    const widths = [{ prefix: "", w: opts.baseWidth }];
+    const only = new Map();
+    const stats = [];
+    for (const v of opts.variants) {
+      const ctxB = await buildModel(v.file, { ...opts, variants: null, prepareOnly: true });
+      const res = mergeVariant(ctxA, ctxB, { bp: v.breakpoint, propsOf });
+      for (const [el, k] of res.only) only.set(el, `${k}@${v.breakpoint}`);
+      for (const [el, n] of ctxB.layerNames) layerNames.set(el, n);
+      ctxA.owns = ((set) => (el) => set.has(el))(new Set([body, ...allElements(body)]));
+      stats.push({ breakpoint: v.breakpoint, width: v.width, ...res.stats });
+      if (v.width) widths.push({ prefix: v.breakpoint, w: v.width });
+    }
+    if (widths.every((x) => x.w)) fluidize(body, widths);
+    variantInfo = { only, stats, widths };
+    elements = [body, ...allElements(body)];
+  }
+
   // ---- ids for the outline / plan
   const ids = new Map(); // el -> "n12"
   const byId = new Map();
@@ -334,7 +365,7 @@ export async function buildModel(htmlPath, opts) {
   return {
     $, body, meta, styling, tw4, twSource, parsed, behavior, notes, tw, cssOut, recipes,
     ids, byId, groups, duplicates, icons, svgOf, elNotes, iconFonts, customElements, assets, origClasses, cssClasses,
-    scriptSources: src.scriptSources, stateClasses,
+    scriptSources: src.scriptSources, stateClasses, layerNames, variantInfo,
     globalsCss: styling === "tailwind" ? buildGlobalCss(parsed, tw, tw4) : null,
     stats: { elements: ids.size, rules: parsed.rules.length },
   };

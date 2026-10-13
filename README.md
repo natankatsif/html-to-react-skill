@@ -103,14 +103,16 @@ $H visual-diff landing/index.html http://localhost:3000/<route>
 | Tailwind v2 landing → v4 | ≈19k | ≈1.1k | 0.01% / — ¹ |
 | forms, tables, `pre`, SVG, entities | ≈1.2k | ≈0.5k | 0.02% / 0.05% |
 | responsive: `@import`, `<link media>`, CSS nesting, `width < 900px`, 4 breakpoints | ≈0.5k | ≈0.3k | 0.00% at 1280 / 800 / 650 / 550 / 450 / 390 |
+| Pencil export: 1278 px desktop + 390 px mobile → one component set | ≈1.7M ² | ≈0.9k | 0.01% / 0.02% |
 
-`tsc` and `eslint` pass in every case. ¹ The template is missing an image at mobile width, so the comparison isn't fair.
+`tsc` and `eslint` pass in every case. ¹ The template is missing an image at mobile width, so the comparison isn't fair. ² Mostly base64 images.
 
 ## Features
 
 - Next.js (app router) and React + Vite, TypeScript and JS. Adapts to the project: `@/` alias, indentation, Tailwind version.
 - Two styling modes: `tailwind` (CSS converted to utilities, classes validated against the project's real Tailwind) and `css` (original classes + purged CSS scoped to the page).
 - Handles Tailwind v4 traps: Preflight wiping browser defaults, arbitrary breakpoints sorting before `lg:`, cascade layers. Old Tailwind v1–v3 classes are renamed for v4.
+- Desktop + mobile exports of the same page (Figma, Pencil, Framer...) merge into **one** responsive component set: `analyze desktop.html mobile.html`. Shared parts get `lg:` overrides, only real differences are rendered twice.
 - Inline SVGs become icon components or lucide icons; icon fonts (Font Awesome, Ionicons) map to lucide.
 
 ## Limitations
